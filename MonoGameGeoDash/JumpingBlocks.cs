@@ -9,21 +9,28 @@ using System.Threading.Tasks;
 
 namespace MonoGameGeoDash
 {
-    abstract class Sprite
+    internal class JumpingBlocks
     {
-        public Texture2D texture;
+        Texture2D texture;
         public Rectangle rect;
         Color color;
-        public Sprite(Texture2D texture, Rectangle rect, Color color)
+        public JumpingBlocks(Texture2D texture, Rectangle rect, Color color)
         {
             this.texture = texture;
             this.rect = rect;
             this.color = color;
         }
-       
-        public virtual void Draw(SpriteBatch _spriteBatch)
+        public void Draw(SpriteBatch _spriteBatch)
         {
             _spriteBatch.Draw(texture, rect, color);
+        }
+        public void Update()
+        {
+            rect.X--;
+            if (rect.X <= -rect.Width)
+            {
+                rect.X = rect.Width;
+            }
         }
     }
 }

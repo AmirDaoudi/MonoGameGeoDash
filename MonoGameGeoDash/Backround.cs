@@ -21,5 +21,7 @@ namespace MonoGameGeoDash
                 rect.X = rect.Width;
             }
         }
+
+       
     }
 }

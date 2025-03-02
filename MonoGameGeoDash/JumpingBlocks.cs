@@ -29,7 +29,7 @@ namespace MonoGameGeoDash
             rect.X--;
             if (rect.X <= -rect.Width)
             {
-                rect.X = rect.Width;
+                rect.X = 800;
             }
         }
     }

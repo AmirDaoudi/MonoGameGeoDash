@@ -8,10 +8,28 @@ using System.Threading.Tasks;
 
 namespace MonoGameGeoDash
 {
-    internal class Map : Sprite
+    internal class Map
     {
-        public Map(Texture2D texture, Rectangle rect, Color color) : base(texture, rect, color)
+        Texture2D texture;
+        public Rectangle rect;
+        Color color;
+        public Map(Texture2D texture, Rectangle rect, Color color)
         {
+            this.texture = texture;
+            this.rect = rect;
+            this.color = color;
+        }
+        public void Draw(SpriteBatch _spriteBatch)
+        {
+            _spriteBatch.Draw(texture, rect, color);
+        }
+        public void Update()
+        {
+            rect.X--;
+            if (rect.X <= -rect.Width)
+            {
+                rect.X = rect.Width;
+            }
         }
     }
 }

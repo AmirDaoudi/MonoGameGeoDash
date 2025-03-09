@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace MonoGameGeoDash
 {
-    internal class JumpingBlocks
+    public class JumpingBlocks
     {
         Texture2D texture;
         public Rectangle rect;
@@ -32,5 +32,6 @@ namespace MonoGameGeoDash
                 rect.X = 800;
             }
         }
+        
     }
 }

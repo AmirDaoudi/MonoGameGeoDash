@@ -61,28 +61,32 @@ namespace MonoGameGeoDash
         public Character(Texture2D texture, Rectangle rect, Color color) : base(texture, rect, color)
         {
         }
-        public void Update(KeyboardState state, JumpingBlocks blocks, Map map)
+        public void Update(KeyboardState state, JumpingBlocks blocks, Map map, JumpingBlocks closestBlock)
         {
+            floor = map.rect.Y + 60;
+            if (closestBlock != null && (rect.X + rect.Width) > closestBlock.rect.X && rect.X < closestBlock.rect.X + closestBlock.rect.Width)
+            {
+                floor = closestBlock.rect.Y + 60;
+            }
+            else
+            {
                 floor = map.rect.Y + 60;
-                if ((rect.X + rect.Width) > blocks.rect.X && rect.X < blocks.rect.X + blocks.rect.Width)
-                {
-                    floor = blocks.rect.Y + 60;
-                }
-                if (state.IsKeyDown(Keys.Space) && rect.Y + rect.Height > floor - 50)
-                {
-                velocity = -5;
-                rect.Y -= 2; 
-                }
-                if (rect.Y + rect.Height < floor)
-                {
-                    velocity += gravity;
-                }
-                else
-                {
-                    velocity = 0;
-                }
-                rect.Y += (int)velocity;
-          
+            }
+
+            if (state.IsKeyDown(Keys.Space) && rect.Y + rect.Height - floor > -5)
+            {
+                velocity = -6;
+                rect.Y -= 2;
+            }
+            if (rect.Y + rect.Height < floor)
+            {
+                velocity += gravity;
+            }
+            else
+            {
+                velocity = 0;
+            }
+            rect.Y += (int)velocity;
         }
         public override void Draw(SpriteBatch spriteBatch)
         {

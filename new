@@ -1,0 +1,417 @@
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+
+namespace MonoGameGeoDash
+{
+    // Base sprite class for all drawable game objects
+    abstract class Sprite
+    {
+        public Texture2D texture;
+        public Rectangle rect;
+        public Color color;
+
+        public Sprite(Texture2D texture, Rectangle rect, Color color)
+        {
+            this.texture = texture;
+            this.rect = rect;
+            this.color = color;
+        }
+
+        // Default draw method (draws the texture at the given rectangle with its color)
+        public virtual void Draw(SpriteBatch spriteBatch)
+        {
+            spriteBatch.Draw(texture, rect, color);
+        }
+    }
+}
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+
+namespace MonoGameGeoDash
+{
+    internal class Character : Sprite
+    {
+        // Physics parameters
+        private float gravity = 0.2f;     // Downward acceleration
+        private float velocity = 0f;      // Current vertical velocity (positive = falling, negative = jumping up)
+        private float rotation = 0f;      // Current rotation angle (radians) for the character's spin
+        private int floor = 0;            // Current floor Y-position that the character should land on
+
+        public Character(Texture2D texture, Rectangle rect, Color color)
+            : base(texture, rect, color)
+        {
+        }
+
+        /// <summary>
+        /// Updates the character's physics and position based on input and the environment.
+        /// </summary>
+        /// <param name="state">Current keyboard state for input.</param>
+        /// <param name="map">The ground map (to determine base floor level).</param>
+        /// <param name="closestBlock">The nearest upcoming obstacle in front of the character.</param>
+        public void Update(KeyboardState state, Map map, JumpingBlocks closestBlock)
+        {
+            // Determine the baseline floor (ground level by default)
+            // We add an offset (e.g., 60) to align with the ground's top surface
+            floor = map.rect.Y + 60;
+
+            // If an obstacle is directly beneath the character (horizontally overlapping), use its top as the floor
+            if (closestBlock != null &&
+                rect.X + rect.Width > closestBlock.rect.X &&    // character's right side is past obstacle's left side
+                rect.X < closestBlock.rect.X + closestBlock.rect.Width) // character's left side is before obstacle's right side
+            {
+                // Set floor to obstacle's top plus an offset (e.g., obstacle height) so character can land on it
+                floor = closestBlock.rect.Y + 60;
+            }
+
+            // Jump logic: if SPACE is pressed and the character is effectively on the floor (or just about to land)
+            if (state.IsKeyDown(Keys.Space) && (rect.Y + rect.Height >= floor - 5))
+            {
+                // Initiate a jump by giving an upward velocity
+                velocity = -6f;    // negative Y velocity moves the character up
+                rect.Y -= 2;       // small instant lift to avoid sticky ground
+            }
+
+            // Apply gravity if character is in the air (below the floor level)
+            if (rect.Y + rect.Height < floor)
+            {
+                velocity += gravity;  // accelerate downward
+                // Rotate while in the air
+                rotation += 0.1f;     // increase rotation angle (radians) for spinning effect
+            }
+            else
+            {
+                // The character has hit the floor (ground or an obstacle)
+                velocity = 0f;
+                rotation = 0f;       // reset rotation so the character is upright on landing
+                // Ensure the character is exactly on the floor (correct any minor overlap)
+                rect.Y = floor - rect.Height;
+            }
+
+            // Update the character's vertical position by its velocity
+            rect.Y += (int)velocity;
+        }
+
+        /// <summary>
+        /// Draw the character with rotation applied. The character will rotate around its center.
+        /// </summary>
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            // Calculate the origin as the center of the character's texture (for rotation)
+            Vector2 origin = new Vector2(texture.Width / 2f, texture.Height / 2f);
+            // Calculate the position to draw such that the character's center is at its rect center
+            Vector2 drawPosition = new Vector2(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
+
+            // Draw the character texture with the specified rotation around its center
+            spriteBatch.Draw(texture, drawPosition, null, Color.White, rotation, origin, 1.0f, SpriteEffects.None, 0f);
+        }
+    }
+}
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+
+namespace MonoGameGeoDash
+{
+    public class JumpingBlocks
+    {
+        public Texture2D texture;
+        public Rectangle rect;
+        public Color color;
+
+        public JumpingBlocks(Texture2D texture, Rectangle rect, Color color)
+        {
+            this.texture = texture;
+            this.rect = rect;
+            this.color = color;
+        }
+
+        /// <summary>
+        /// Update the obstacle position, moving it to the left and looping it to the right when it goes off screen.
+        /// </summary>
+        public void Update()
+        {
+            // Move the block 1 pixel to the left (simulating the world moving rightward)
+            rect.X -= 1;
+
+            // If the block moved past the left edge of the screen, reset it to the right side
+            if (rect.X <= -rect.Width)
+            {
+                rect.X = 800;  // assuming the game window width is 800 pixels
+            }
+        }
+
+        /// <summary>
+        /// Draw the obstacle block.
+        /// </summary>
+        public void Draw(SpriteBatch spriteBatch)
+        {
+            spriteBatch.Draw(texture, rect, color);
+        }
+    }
+}
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+
+namespace MonoGameGeoDash
+{
+    internal class Map
+    {
+        public Texture2D texture;
+        public Rectangle rect;
+        public Color color;
+
+        public Map(Texture2D texture, Rectangle rect, Color color)
+        {
+            this.texture = texture;
+            this.rect = rect;
+            this.color = color;
+        }
+
+        /// <summary>
+        /// Update the ground tile position for scrolling.
+        /// </summary>
+        public void Update()
+        {
+            // Scroll the ground tile to the left
+            rect.X -= 1;
+
+            // If this tile moved completely off the left side, move it to the right side to loop
+            if (rect.X <= -rect.Width)
+            {
+                rect.X = rect.Width;  // place it exactly one screen-width to the right
+            }
+        }
+
+        /// <summary>
+        /// Draw the ground tile.
+        /// </summary>
+        public void Draw(SpriteBatch spriteBatch)
+        {
+            spriteBatch.Draw(texture, rect, color);
+        }
+    }
+}
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+
+namespace MonoGameGeoDash
+{
+    internal class Background
+    {
+        public Texture2D texture;
+        public Rectangle rect;
+        public Color color;
+
+        public Background(Texture2D texture, Rectangle rect, Color color)
+        {
+            this.texture = texture;
+            this.rect = rect;
+            this.color = color;
+        }
+
+        /// <summary>
+        /// Update the background position to create a looping scroll.
+        /// </summary>
+        public void Update()
+        {
+            rect.X -= 1;  // move left
+
+            if (rect.X <= -rect.Width)
+            {
+                rect.X = rect.Width;  // wrap to the right side when off screen
+            }
+        }
+
+        /// <summary>
+        /// Draw the background image.
+        /// </summary>
+        public void Draw(SpriteBatch spriteBatch)
+        {
+            spriteBatch.Draw(texture, rect, color);
+        }
+    }
+}
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+
+namespace MonoGameGeoDash
+{
+    public class Game1 : Game
+    {
+        private GraphicsDeviceManager _graphics;
+        private SpriteBatch _spriteBatch;
+
+        // Textures
+        private Texture2D backgroundTexture;
+        private Texture2D characterTexture;
+        private Texture2D obstacleTexture;
+        private Texture2D groundTexture;
+
+        // Game objects
+        private Background bg1, bg2;
+        private Map ground1, ground2;
+        private Character character;
+        private JumpingBlocks obstacle1, obstacle2;
+
+        // Store initial positions for resetting the game
+        private Rectangle characterStartRect;
+        private Rectangle obstacle1StartRect;
+        private Rectangle obstacle2StartRect;
+        private Rectangle ground1StartRect;
+        private Rectangle ground2StartRect;
+
+        public Game1()
+        {
+            _graphics = new GraphicsDeviceManager(this);
+            Content.RootDirectory = "Content";
+            IsMouseVisible = true;
+        }
+
+        protected override void Initialize()
+        {
+            // Initialize game settings if needed (e.g., window size)
+            _graphics.PreferredBackBufferWidth = 800;
+            _graphics.PreferredBackBufferHeight = 480;
+            _graphics.ApplyChanges();
+
+            base.Initialize();
+        }
+
+        protected override void LoadContent()
+        {
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            // Load textures (make sure these are added to the Content pipeline with matching names)
+            backgroundTexture = Content.Load<Texture2D>("GeoDashBackground");
+            characterTexture  = Content.Load<Texture2D>("GeoDashCharacter");
+            obstacleTexture   = Content.Load<Texture2D>("GeoDashBlock");
+            groundTexture     = Content.Load<Texture2D>("GeoDashGround");  // Assuming a ground texture; using obstacle texture if none
+
+            // Create background objects (two for looping)
+            bg1 = new Background(backgroundTexture, new Rectangle(0, 0, 800, 480), Color.White);
+            bg2 = new Background(backgroundTexture, new Rectangle(800, 0, 800, 480), Color.White);
+
+            // Create ground objects (two for looping). Height 480 is used here because the texture might be tall; 
+            // adjust height if using a specific ground strip image.
+            ground1 = new Map(groundTexture, new Rectangle(0, 320, 800, 480), Color.White);
+            ground2 = new Map(groundTexture, new Rectangle(800, 320, 800, 480), Color.White);
+
+            // Create obstacles 
+            obstacle1 = new JumpingBlocks(obstacleTexture, new Rectangle(500, 275, 50, 50), Color.White);
+            obstacle2 = new JumpingBlocks(obstacleTexture, new Rectangle(800, 225, 50, 100), Color.White);
+
+            // Create character
+            character = new Character(characterTexture, new Rectangle(400, 240, 75, 75), Color.White);
+
+            // Record starting positions for reset (make deep copies of rectangles)
+            characterStartRect = character.rect;
+            obstacle1StartRect = obstacle1.rect;
+            obstacle2StartRect = obstacle2.rect;
+            ground1StartRect   = ground1.rect;
+            ground2StartRect   = ground2.rect;
+        }
+
+        /// <summary>
+        /// Finds the obstacle that is directly in front of the character (closest on the right side).
+        /// This will be used for adjusting the character's floor.
+        /// </summary>
+        private JumpingBlocks GetClosestBlockToCharacter()
+        {
+            JumpingBlocks closestBlock = null;
+            float closestDistance = float.MaxValue;
+
+            // Check both obstacles
+            JumpingBlocks[] blocks = new JumpingBlocks[] { obstacle1, obstacle2 };
+            foreach (var block in blocks)
+            {
+                // Distance from character's right edge to block's left edge
+                float distance = block.rect.X - (character.rect.X + character.rect.Width);
+                if (distance >= 0 && distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closestBlock = block;
+                }
+            }
+            return closestBlock;
+        }
+
+        /// <summary>
+        /// Reset the game objects to their starting positions (called when the character hits an obstacle).
+        /// </summary>
+        private void ResetGame()
+        {
+            // Reset character
+            character.rect = characterStartRect;
+            // Reset velocity and rotation so it doesn't start with any momentum
+            // (These fields are private; if needed, we could add a method to Character to reset them)
+            
+            // Reset obstacles
+            obstacle1.rect = obstacle1StartRect;
+            obstacle2.rect = obstacle2StartRect;
+            // Reset ground
+            ground1.rect = ground1StartRect;
+            ground2.rect = ground2StartRect;
+            // Reset background
+            bg1.rect = new Rectangle(0, 0, bg1.rect.Width, bg1.rect.Height);
+            bg2.rect = new Rectangle(bg1.rect.Width, 0, bg2.rect.Width, bg2.rect.Height);
+        }
+
+        protected override void Update(GameTime gameTime)
+        {
+            // Exit on Escape key or back button (standard behavior)
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape) || 
+                GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
+            {
+                Exit();
+            }
+
+            // Get the current keyboard state for this frame
+            KeyboardState state = Keyboard.GetState();
+
+            // Update background, ground, obstacles
+            bg1.Update();
+            bg2.Update();
+            ground1.Update();
+            ground2.Update();
+            obstacle1.Update();
+            obstacle2.Update();
+
+            // Determine which obstacle is the next one in front of the character
+            JumpingBlocks closestBlock = GetClosestBlockToCharacter();
+
+            // Update character with the current input and environment
+            character.Update(state, ground1, closestBlock);
+
+            // Collision detection: check if character intersects any obstacle
+            if (character.rect.Intersects(obstacle1.rect) || character.rect.Intersects(obstacle2.rect))
+            {
+                // If there's a collision, reset the game to start over&#8203;:contentReference[oaicite:10]{index=10}
+                ResetGame();
+            }
+
+            base.Update(gameTime);
+        }
+
+        protected override void Draw(GameTime gameTime)
+        {
+            GraphicsDevice.Clear(Color.CornflowerBlue);  // clear the screen with a sky color
+
+            _spriteBatch.Begin();
+            // Draw background (furthest back)
+            bg1.Draw(_spriteBatch);
+            bg2.Draw(_spriteBatch);
+            // Draw ground (behind character and obstacles)
+            ground1.Draw(_spriteBatch);
+            ground2.Draw(_spriteBatch);
+            // Draw obstacles
+            obstacle1.Draw(_spriteBatch);
+            obstacle2.Draw(_spriteBatch);
+            // Draw character (in front of ground and obstacles)
+            character.Draw(_spriteBatch);
+            _spriteBatch.End();
+
+            base.Draw(gameTime);
+        }
+    }
+}

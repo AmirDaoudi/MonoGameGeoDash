@@ -1,27 +1,32 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MonoGameGeoDash
 {
-    internal class Backround : Sprite
+    internal class Background
     {
-        public Backround(Texture2D texture, Rectangle rect, Color color) : base(texture, rect, color)
+        public Texture2D texture;
+        public Rectangle rect;
+        public Color color;
+
+        public Background(Texture2D texture, Rectangle rect, Color color)
         {
+            this.texture = texture;
+            this.rect = rect;
+            this.color = color;
         }
         public void Update()
         {
-            rect.X--;
-            if(rect.X <= -rect.Width)
+            rect.X -= 1; 
+
+            if (rect.X <= -rect.Width)
             {
-                rect.X = rect.Width;
+                rect.X = rect.Width;  
             }
         }
-
-       
+        public void Draw(SpriteBatch spriteBatch)
+        {
+            spriteBatch.Draw(texture, rect, color);
+        }
     }
 }

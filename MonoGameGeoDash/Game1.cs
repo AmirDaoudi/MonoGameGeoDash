@@ -1,109 +1,152 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrayNotify;
+using System;
 
 namespace MonoGameGeoDash
 {
+    //NOTES:
+    //NEED A BETTER COLLSION TRY USING SEPERATING AXIS THEORY OR CORNER COLLISION DETECTION
+    //FOR SOME REASON THE CHARACTER IS BROKEN ITS TO BIG BUT CHANGING THE SIZE DOESNT DO ANYTHING AS WELL IT IS PLACED WAY WAY BEFORE THE FLOOR
+    //ALSO NEED TO MAKE THE GAME MORE COMPLETE NOT JUST TWO OBSTACLES NEEDS TO LOOK LIKE A FULL GEODASH LEVEL NO BS
+    //
+    //
     public class Game1 : Game
     {
-      // note from 1/4 work more on the character aswellas just other parts u finished with the character jumping but is a little bugged
-        private GraphicsDeviceManager _graphics;
-        private SpriteBatch _spriteBatch;
-        Texture2D background;
-        Texture2D CharacterTexture;
-        Texture2D JumpingBlocksTexture;
-        Backround back1;
-        Backround back2;
-        Map Map1;
-        Map Map2;
-        Character character;
-        JumpingBlocks block;
-        JumpingBlocks block2;
-        KeyboardState state;
-        JumpingBlocks closestBlock = null;
+        private GraphicsDeviceManager graphics;
+        private SpriteBatch spriteBatch;
+
+        private Texture2D backgroundTexture;
+        private Texture2D characterTexture;
+        private Texture2D obstacleTexture;
+        private Texture2D groundTexture;
+
+        private Background bg1, bg2;
+        private Map ground1, ground2;
+        private Character character;
+        private JumpingBlocks obstacle1, obstacle2;
+
+        private Rectangle characterStartRect;
+        private Rectangle obstacle1StartRect;
+        private Rectangle obstacle2StartRect;
+        private Rectangle ground1StartRect;
+        private Rectangle ground2StartRect;
 
         public Game1()
         {
-            _graphics = new GraphicsDeviceManager(this);
+            graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
         }
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            graphics.PreferredBackBufferWidth = 800;
+            graphics.PreferredBackBufferHeight = 480;
+            graphics.ApplyChanges();
 
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
-            background = Content.Load<Texture2D>("GeoDashBackground");
-            CharacterTexture = Content.Load<Texture2D>("GeoDashCharacter");
-            JumpingBlocksTexture = Content.Load<Texture2D>("GeoDashBlock");
-            back1 = new Backround(background, new Rectangle(0, 0, 800, 480), Color.White);
-            back2 = new Backround(background, new Rectangle(800, 0, 800, 480), Color.White);
-            character = new Character(CharacterTexture, new Rectangle(400, 240, 75, 75), Color.White);
-            block = new JumpingBlocks(JumpingBlocksTexture, new Rectangle(500, 275, 50, 50), Color.White);
-            block2 = new JumpingBlocks(JumpingBlocksTexture, new Rectangle(800, 225, 50, 100), Color.White);
-            Map1 = new Map(JumpingBlocksTexture, new Rectangle(0, 320, 800, 480), Color.White);
-            Map2 = new Map(JumpingBlocksTexture, new Rectangle(800, 320, 800, 480), Color.White);
-            // TODO: use this.Content to load your game content here
+            spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            backgroundTexture = Content.Load<Texture2D>("GeoDashBackground");
+            characterTexture = Content.Load<Texture2D>("GeoDashCharacter");
+            obstacleTexture = Content.Load<Texture2D>("GeoDashBlock");
+            groundTexture = Content.Load<Texture2D>("GeoDashBlock");  
+
+            bg1 = new Background(backgroundTexture, new Rectangle(0, 0, 800, 480), Color.White);
+            bg2 = new Background(backgroundTexture, new Rectangle(800, 0, 800, 480), Color.White);
+
+          
+            ground1 = new Map(groundTexture, new Rectangle(0, 320, 800, 480), Color.White);
+            ground2 = new Map(groundTexture, new Rectangle(800, 320, 800, 480), Color.White);
+
+            obstacle1 = new JumpingBlocks(obstacleTexture, new Rectangle(500, 275, 50, 50), Color.White);
+            obstacle2 = new JumpingBlocks(obstacleTexture, new Rectangle(800, 225, 50, 100), Color.White);
+
+            character = new Character(characterTexture, new Rectangle(300, 270, characterTexture.Width, characterTexture.Height), Color.White);
+
+            characterStartRect = character.rect;
+            obstacle1StartRect = obstacle1.rect;
+            obstacle2StartRect = obstacle2.rect;
+            ground1StartRect = ground1.rect;
+            ground2StartRect = ground2.rect;
         }
-        public JumpingBlocks GetClosestBlockToCharacter()
+
+
+            JumpingBlocks closestBlock = null;
+        private JumpingBlocks GetClosestBlockToCharacter()
         {
             float closestDistance = float.MaxValue;
 
-            List<JumpingBlocks> blocks = new List<JumpingBlocks> { block, block2 }; 
-
-            foreach (var blk in blocks)
+            JumpingBlocks[] blocks = new JumpingBlocks[] { obstacle1, obstacle2 };
+            foreach (var block in blocks)
             {
-                float distance = blk.rect.X - (character.rect.X + character.rect.Width);
-                if (distance > 0 && distance < closestDistance)
+                float distance = block.rect.X - (character.rect.X + character.rect.Width);
+                if (distance >= 0 && distance < closestDistance)
                 {
                     closestDistance = distance;
-                    closestBlock = blk;
+                    closestBlock = block;
+                    return closestBlock;
                 }
             }
-
             return closestBlock;
         }
+
+ 
+        private void ResetGame()
+        {
+            character.rect = characterStartRect;
+            obstacle1.rect = obstacle1StartRect;
+            obstacle2.rect = obstacle2StartRect;
+            ground1.rect = ground1StartRect;
+            ground2.rect = ground2StartRect;
+            bg1.rect = new Rectangle(0, 0, bg1.rect.Width, bg1.rect.Height);
+            bg2.rect = new Rectangle(bg1.rect.Width, 0, bg2.rect.Width, bg2.rect.Height);
+        }
+
+
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape) ||
+                GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
+            {
                 Exit();
-
-            state = Keyboard.GetState();
-            back1.Update();
-            back2.Update();
-            block.Update();
-            block2.Update();
-            Map1.Update();
-            Map2.Update();
+            }
+            KeyboardState state = Keyboard.GetState();
+            bg1.Update();
+            bg2.Update();
+            ground1.Update();
+            ground2.Update();
+            obstacle1.Update();
+            obstacle2.Update();
 
             JumpingBlocks closestBlock = GetClosestBlockToCharacter();
-            character.Update(state, block, Map1, closestBlock);
+            character.Update(state, ground1, closestBlock);
+            if (Character.Collides(character, closestBlock))
+            {
+                ResetGame();
+            }
 
             base.Update(gameTime);
         }
-        
+
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue); 
-            _spriteBatch.Begin();
-            back1.Draw(_spriteBatch);
-            back2.Draw(_spriteBatch);
-            character.Draw(_spriteBatch);
-            block.Draw(_spriteBatch);
-            block2.Draw(_spriteBatch);
-            Map1.Draw(_spriteBatch);
-            Map2.Draw(_spriteBatch);
-            _spriteBatch.End();
-            // TODO: Add your drawing code here
+
+            spriteBatch.Begin();
+            bg1.Draw(spriteBatch);
+            bg2.Draw(spriteBatch);
+            ground1.Draw(spriteBatch);
+            ground2.Draw(spriteBatch);
+            obstacle1.Draw(spriteBatch);
+            obstacle2.Draw(spriteBatch);
+            character.Draw(spriteBatch);
+            spriteBatch.End();
 
             base.Draw(gameTime);
         }

@@ -19,7 +19,7 @@ namespace MonoGameGeoDash
 
         public void Update()
         {
-            rect.X -= 1;
+            rect.X -= 3;
             if (rect.X <= -rect.Width)
             {
                 rect.X = rect.Width; 

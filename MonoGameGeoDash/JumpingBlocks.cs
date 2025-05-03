@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 
 namespace MonoGameGeoDash
 {
@@ -15,13 +16,14 @@ namespace MonoGameGeoDash
             this.rect = rect;
             this.color = color;
         }
-        public void Update()
+        public void Update(JumpingBlocks block)
         {
-            rect.X -= 1;
+            rect.X -= 3;
 
             if (rect.X <= -rect.Width)
             {
-                rect.X = 800;  
+                int rndm = new Random().Next(400, 1000);
+                rect.X = block.rect.X + rndm;  
             }
         }
         public void Draw(SpriteBatch spriteBatch)

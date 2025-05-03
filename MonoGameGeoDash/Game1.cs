@@ -1,7 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGameGeoDash;
+using SharpDX.DirectWrite;
 using System;
+using System.Reflection.Metadata;
 
 namespace MonoGameGeoDash
 {
@@ -16,10 +19,12 @@ namespace MonoGameGeoDash
         private GraphicsDeviceManager graphics;
         private SpriteBatch spriteBatch;
 
+
         private Texture2D backgroundTexture;
         private Texture2D characterTexture;
         private Texture2D obstacleTexture;
         private Texture2D groundTexture;
+        private SpriteFont font1;
 
         private Background bg1, bg2;
         private Map ground1, ground2;
@@ -31,6 +36,12 @@ namespace MonoGameGeoDash
         private Rectangle obstacle2StartRect;
         private Rectangle ground1StartRect;
         private Rectangle ground2StartRect;
+        private Vector2 fontPos;
+        int counter = 1;
+        int limit = 50;
+        float countDuration = 2f;
+        float currentTime = 0f;
+        int highscore = 0;
 
         public Game1()
         {
@@ -55,8 +66,8 @@ namespace MonoGameGeoDash
             backgroundTexture = Content.Load<Texture2D>("GeoDashBackground");
             characterTexture = Content.Load<Texture2D>("GeoDashCharacter");
             obstacleTexture = Content.Load<Texture2D>("GeoDashBlock");
-            groundTexture = Content.Load<Texture2D>("GeoDashBlock");  
-
+            groundTexture = Content.Load<Texture2D>("GeoDashBlock");
+            fontPos = new Vector2(240, 100);
             bg1 = new Background(backgroundTexture, new Rectangle(0, 0, 800, 480), Color.White);
             bg2 = new Background(backgroundTexture, new Rectangle(800, 0, 800, 480), Color.White);
 
@@ -80,13 +91,13 @@ namespace MonoGameGeoDash
             JumpingBlocks closestBlock = null;
         private JumpingBlocks GetClosestBlockToCharacter()
         {
-            float closestDistance = float.MaxValue;
+            float closestDistance = 300;
 
             JumpingBlocks[] blocks = new JumpingBlocks[] { obstacle1, obstacle2 };
             foreach (var block in blocks)
             {
                 float distance = block.rect.X - (character.rect.X + character.rect.Width);
-                if (distance >= 0 && distance < closestDistance)
+                if (distance >= -200 && distance < closestDistance)
                 {
                     closestDistance = distance;
                     closestBlock = block;
@@ -111,27 +122,38 @@ namespace MonoGameGeoDash
 
         protected override void Update(GameTime gameTime)
         {
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape) ||
-                GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
-            {
-                Exit();
-            }
-            KeyboardState state = Keyboard.GetState();
-            bg1.Update();
-            bg2.Update();
-            ground1.Update();
-            ground2.Update();
-            obstacle1.Update();
-            obstacle2.Update();
+            currentTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            JumpingBlocks closestBlock = GetClosestBlockToCharacter();
-            character.Update(state, ground1, closestBlock);
-            if (Character.Collides(character, closestBlock))
+            if (!Character.Collides(character, GetClosestBlockToCharacter()))
             {
-                ResetGame();
-            }
+                if (Keyboard.GetState().IsKeyDown(Keys.Escape) ||
+               GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
+                {
+                    Exit();
+                }
+                KeyboardState state = Keyboard.GetState();
+                bg1.Update();
+                bg2.Update();
+                ground1.Update();
+                ground2.Update();
+                obstacle1.Update(GetClosestBlockToCharacter());
+                obstacle2.Update(GetClosestBlockToCharacter());
+                character.Update(state, ground1, GetClosestBlockToCharacter());
+                if (Character.Collides(character, GetClosestBlockToCharacter()))
+                {
+                    ResetGame();
+                }
 
+                counter++;
+                currentTime -= countDuration;
+            }
+            if (highscore <= counter)
+            {
+                highscore = counter;
+            }
+           
             base.Update(gameTime);
+
         }
 
         protected override void Draw(GameTime gameTime)
@@ -146,6 +168,11 @@ namespace MonoGameGeoDash
             obstacle1.Draw(spriteBatch);
             obstacle2.Draw(spriteBatch);
             character.Draw(spriteBatch);
+
+            string output = "Current Sore: " + counter + " High Score: " + highscore;
+            Vector2 FontOrigin = font1.MeasureString(output) / 2;
+            spriteBatch.DrawString(font1, output, fontPos, Color.LightGreen,
+                0, FontOrigin, 1.0f, SpriteEffects.None, 0.5f);
             spriteBatch.End();
 
             base.Draw(gameTime);

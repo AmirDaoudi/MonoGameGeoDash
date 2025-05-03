@@ -53,11 +53,7 @@ namespace MonoGameGeoDash
         {
             Rectangle r1 = character.rect;
             Rectangle r2 = block.rect;
-
-            if (!r1.Intersects(r2))
-            {
-                return false;
-            }
+ 
 
             if (r2.Contains(new Point(r1.Left, r1.Top)) ||
                 r2.Contains(new Point(r1.Right, r1.Top)) ||
@@ -73,6 +69,11 @@ namespace MonoGameGeoDash
                 r1.Contains(new Point(r2.Right, r2.Bottom)))
             {
                 return true;
+            }
+
+            if (!r1.Intersects(r2))
+            {
+                return false;
             }
 
             return false;
